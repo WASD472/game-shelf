@@ -1,9 +1,12 @@
 import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+import os
+from dotenv import load_dotenv
 
-TOKEN = "8861753394:AAFVEWANxCidy4YpQNyntHNlnafS7EOEI1Y"
-API_URL = "http://127.0.0.1:8000"
+load_dotenv()
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 
 
 #Достаем пользователя из Telegram и берм его id и имя
