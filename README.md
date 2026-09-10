@@ -6,7 +6,7 @@ Fullstack-проект для учёта игр.(С кривым пока что
 
 - Telegram-бот
 - API на FastAPI
-- База данных SQLite
+- Проект использует PostgreSQL (Aiven)
 - Веб-страница для просмотра игр
 
 ## Возможности
@@ -69,3 +69,18 @@ python bot.py
 
 - TELEGRAM_BOT_TOKEN — токен бота
 - API_URL — адрес API
+- DATABASE_URL — строка подключения к PostgreSQL
+
+## Где взять DATABASE_URL
+
+1. Зарегистрируйся на aiven.io
+2. Создай PostgreSQL (план Free)
+3. Скопируй Service URI — это и есть DATABASE_URL
+
+## Где взять API_URL
+
+API_URL — это публичный адрес твоего сервиса на Render.
+
+Например: https://game-shelf-bot.onrender.com
+
+Он появляется после создания Web Service на render.com.
