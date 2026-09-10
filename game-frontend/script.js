@@ -1,3 +1,14 @@
+const urlParams = new URLSearchParams(window.location.search);//window.location.search — часть адреса после ?
+const user_id_from_url = urlParams.get('user');
+
+if (user_id_from_url) {
+    document.getElementById("userInput").value = user_id_from_url;
+    window.addEventListener('load', () => { // «когда страница полностью загрузится, автоматически нажать кнопку
+        document.getElementById("loadBtn").click();
+    });
+}
+
+
 document.getElementById("loadBtn").addEventListener("click", () => {
     const user_id = document.getElementById("userInput").value;
     const container = document.getElementById("games");

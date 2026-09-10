@@ -26,6 +26,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Команды:\n"
         "/games — мои игры\n"
         "/delete — удалить игру\n\n"
+        "/site — ссылка на твою страницу\n"
         "Добавить:\n"
         "прошел Название игры\n"
         "играю в Название игры"
@@ -116,11 +117,17 @@ async def cmd_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             await update.message.reply_text("Неверный номер")
 
+async def cmd_site(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    url = f"https://game-shelf67.netlify.app/?user={user_id}"
+    await update.message.reply_text(f"Твоя страница с играми:\n{url}")
+
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("games", cmd_games))
     app.add_handler(CommandHandler("delete", cmd_delete))
+    app.add_handler(CommandHandler("site", cmd_site))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     print("Бот запущен...")
     app.run_polling()

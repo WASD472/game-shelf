@@ -26,13 +26,17 @@ pip install -r requirements.txt
 
 uvicorn main:app --reload
 
-3. В bot.py вставить токен
+3. Создать файл .env с переменными:
+
+TELEGRAM_BOT_TOKEN=твой_токен
+API_URL=http://127.0.0.1:8000
+DATABASE_URL=твоя_строка_подключения
 
 4. Запустить бота:
 
 python bot.py
 
-5. Открыть файл game-frontend/index.html в браузере
+5. Открыть сайт: https://game-shelf67.netlify.app
 
 ## Команды бота
 
@@ -84,3 +88,8 @@ API_URL — это публичный адрес твоего сервиса н�
 Например: https://game-shelf-bot.onrender.com
 
 Он появляется после создания Web Service на render.com.
+
+## Ссылки
+
+- Сайт: https://game-shelf67.netlify.app
+- API: https://game-shelf-bot.onrender.com
