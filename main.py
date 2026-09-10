@@ -1,9 +1,17 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from pydantic import BaseModel
 import sqlite3
 from fastapi.responses import HTMLResponse
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],#разрешаем запросы с любых источников
+    allow_methods=["*"],#любые методы (GET, POST, DELETE)
+    allow_headers=["*"],#любые заголовки
+)
 
 # Создаём таблицы
 conn = sqlite3.connect("games.db")
