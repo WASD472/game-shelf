@@ -1,41 +1,50 @@
-from fastapi.middleware.cors import CORSMiddleware
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI
 from pydantic import BaseModel
-import sqlite3
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],#разрешаем запросы с любых источников
-    allow_methods=["*"],#любые методы (GET, POST, DELETE)
-    allow_headers=["*"],#любые заголовки
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Создаём таблицы
-conn = sqlite3.connect("games.db")
-cur = conn.cursor()
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        username TEXT
-    )
-""")
+# Создаём таблицы при старте
+def init_db():
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id BIGINT PRIMARY KEY,
+            username TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS games (
+            id SERIAL PRIMARY KEY,
+            user_id BIGINT REFERENCES users(id),
+            title TEXT,
+            status TEXT,
+            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
 
-cur.execute("""
-    CREATE TABLE IF NOT EXISTS games (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        title TEXT,
-        status TEXT,
-        date TEXT,
-        FOREIGN KEY (user_id) REFERENCES users (id)
-    )
-""")
+init_db()
 
-# Модель игры
 class Game(BaseModel):
     title: str
     status: str
@@ -45,55 +54,43 @@ class User(BaseModel):
     user_id: int
     username: str
 
-# Добавить игру
 @app.post("/games/")
 def add_game(game: Game):
-    conn = sqlite3.connect("games.db")
+    conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO games (user_id, title, status, date) VALUES (?, ?, ?, datetime('now'))",
+        "INSERT INTO games (user_id, title, status) VALUES (%s, %s, %s)",
         (game.user_id, game.title, game.status)
     )
     conn.commit()
+    cur.close()
     conn.close()
     return {"message": f"Игра '{game.title}' добавлена"}
 
-# Все игры
 @app.get("/games/")
 def get_games():
-    conn = sqlite3.connect("games.db")
-    cur = conn.cursor()
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("""
         SELECT games.id, users.username, games.title, games.status, games.date
-        FROM games
-        JOIN users ON games.user_id = users.id 
-    """)#JOIN users ON games.user_id = users.id - Присоединяем таблицу users, связывая по id 
-    rows = cur.fetchall()
+        FROM games JOIN users ON games.user_id = users.id
+    """)
+    games = cur.fetchall()
+    cur.close()
     conn.close()
-
-    games = []
-    for row in rows:
-        games.append({
-            "id": row[0],
-            "username": row[1],
-            "title": row[2],
-            "status": row[3],
-            "date": row[4]
-        })
     return games
 
-# Показывает игры только одного пользователя.
 @app.get("/games/view/{user_id}", response_class=HTMLResponse)
 def view_user_games(user_id: int):
-    conn = sqlite3.connect("games.db")
+    conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute("""
         SELECT users.username, games.title, games.status, games.date
-        FROM games
-        JOIN users ON games.user_id = users.id
-        WHERE users.id = ?
+        FROM games JOIN users ON games.user_id = users.id
+        WHERE users.id = %s
     """, (user_id,))
     rows = cur.fetchall()
+    cur.close()
     conn.close()
 
     if not rows:
@@ -105,50 +102,43 @@ def view_user_games(user_id: int):
     html += "</ul>"
     return html
 
-
-@app.post("/users/")#функция в API, которая сохраняет пользователя в базу
+@app.post("/users/")
 def add_user(user: User):
-    conn = sqlite3.connect("games.db")
+    conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    cur.execute("SELECT id FROM users WHERE id = ?", (user.user_id,))
+    cur.execute("SELECT id FROM users WHERE id = %s", (user.user_id,))
     existing = cur.fetchone()
-
     if not existing:
-        cur.execute("INSERT INTO users (id, username) VALUES (?, ?)", (user.user_id, user.username))
+        cur.execute("INSERT INTO users (id, username) VALUES (%s, %s)", (user.user_id, user.username))
         conn.commit()
-
+    cur.close()
     conn.close()
     return {"message": "Пользователь сохранён"}
 
-@app.get("/games/user/{user_id}")#Отдаёт игры только одного пользователя.Чтобы каждый видел только своё, а не общий список.
+@app.get("/games/user/{user_id}")
 def get_user_games(user_id: int):
-    conn = sqlite3.connect("games.db")
-    cur = conn.cursor()
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("""
         SELECT games.id, users.username, games.title, games.status, games.date
-        FROM games
-        JOIN users ON games.user_id = users.id
-        WHERE users.id = ?
-    """,(user_id,))
-    rows = cur.fetchall()
+        FROM games JOIN users ON games.user_id = users.id
+        WHERE users.id = %s
+    """, (user_id,))
+    games = cur.fetchall()
+    cur.close()
     conn.close()
-
-    games = []
-    for row in rows:
-        games.append({
-            "id": row[0],
-            "username": row[1],
-            "title": row[2],
-            "status": row[3],
-            "date": row[4]
-        })
     return games
 
 @app.delete("/games/{game_id}")
 def delete_game(game_id: int):
-    conn = sqlite3.connect("games.db")
+    conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-    cur.execute("DELETE FROM games WHERE id = ?", (game_id,))
+    cur.execute("DELETE FROM games WHERE id = %s", (game_id,))
     conn.commit()
+    cur.close()
     conn.close()
     return {"message": f"Игра с id {game_id} удалена"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
