@@ -8,7 +8,7 @@ document.getElementById("loadBtn").addEventListener("click", () => {
         return;
     }
 
-    fetch(`http://127.0.0.1:8000/games/user/${user_id}`)
+    fetch(`https://game-shelf-bot.onrender.com/games/user/${user_id}`)
         .then(response => response.json())
         .then(games => {
             if (games.length === 0) {
