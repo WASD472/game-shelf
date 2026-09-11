@@ -15,7 +15,7 @@ document.getElementById("loadBtn").addEventListener("click", () => {
     container.innerHTML = "";
 
     if (!user_id) {
-        container.innerHTML = "<p>Введи Telegram id</p>";
+        container.innerHTML = "<p class='empty-msg'>Введи Telegram id</p>";
         return;
     }
 
@@ -28,15 +28,20 @@ document.getElementById("loadBtn").addEventListener("click", () => {
             }
 
             games.forEach(game => {
+                let statusClass = "";
+                if(game.status == "Пройдено") statusClass = "status-done";
+                else if(game.status == "Играю") statusClass = "status-playing";
+            
                 const card = document.createElement("div");
                 card.className = "card";
                 card.innerHTML = `
-                    <h3>${game.title}</h3>
-                    <p>${game.status}</p>
-                    <span>${game.date}</span>
+                    <h3 class="card__title">${game.title}</h3>
+                    <span class="card__status ${statusClass}">${game.status}</span>
+                    <span class="card__date">${game.date}</span>
                 `;
                 container.appendChild(card);
-            });
+             });
+
         })
         .catch(error => {
             container.innerHTML = "<p>Ошибка загрузки</p>";
